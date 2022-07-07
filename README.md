@@ -83,3 +83,11 @@ OPTIONS:
     -V, --version
             Print version information
 ```
+
+## TODO
+
+- Write tests
+- Configurable timezone for deadline checking - currently just uses naive UTC
+- Detailed display mode that shows inline code snippets along with their todos (maybe using `bat`)
+- Configurable files to search/ignore TODOs for
+- General code cleanup
