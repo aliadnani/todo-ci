@@ -1,9 +1,6 @@
 use std::path::PathBuf;
 
-use clap::{Parser, clap_derive::ArgEnum};
-
-
-
+use clap::{clap_derive::ArgEnum, Parser};
 
 /// todo-ci: A simple ci tool to check overdue todos
 #[derive(Parser, Debug)]
@@ -23,7 +20,12 @@ pub struct Args {
     ///- overdue-only: total number of valid + overdue todos + details of overdue todos {n}
     ///- default: total number of valid + overdue todos + details of all todos {n}
     ///- [PLANNED] detailed: total number of valid + overdue todos + details of all todos with inline code snippet {n}{n}
-    #[clap(short = 'd', long = "display-mode", arg_enum, default_value = "default")]
+    #[clap(
+        short = 'd',
+        long = "display-mode",
+        arg_enum,
+        default_value = "default"
+    )]
     pub display_mode: DisplayMode,
 
     /// Root directory to check `todos` for

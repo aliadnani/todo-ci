@@ -19,7 +19,7 @@ fn main() {
     let printer = display::Printer::new(args.display_mode);
     printer.print(results);
 
-    if results.overdue_todos.len() > 0 && !args.no_error {
+    if !results.overdue_todos.is_empty() && !args.no_error {
         std::process::exit(1)
     }
 }

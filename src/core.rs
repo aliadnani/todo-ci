@@ -46,8 +46,8 @@ pub struct Search {
 impl Search {
     pub fn new(root_directory: PathBuf, no_ignore: bool) -> Search {
         Search {
-            root_directory: root_directory,
-            no_ignore: no_ignore,
+            root_directory,
+            no_ignore,
         }
     }
 
@@ -78,9 +78,9 @@ impl Search {
         }
     }
 
-    fn walk_files_and<F>(&self, mut f: F) -> ()
+    fn walk_files_and<F>(&self, mut f: F)
     where
-        F: FnMut(DirEntry) -> (),
+        F: FnMut(DirEntry),
     {
         let mut builder = WalkBuilder::new(&self.root_directory);
         let walk = builder.standard_filters(!self.no_ignore).build();
@@ -143,13 +143,13 @@ impl Search {
                         std::cmp::Ordering::Greater => overdue_todos.push(Todo {
                             file: file_path.into(),
                             line_number: lnum as i32,
-                            date: date,
+                            date,
                             description: description_string.to_string(),
                         }),
                         _ => valid_todos.push(Todo {
                             file: file_path.into(),
                             line_number: lnum as i32,
-                            date: date,
+                            date,
                             description: description_string.to_string(),
                         }),
                     }
