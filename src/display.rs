@@ -51,7 +51,7 @@ impl Printer {
             results.valid_todos.len() + results.overdue_todos.len()
         );
 
-        if results.overdue_todos.len() > 0 {
+        if !results.overdue_todos.is_empty() {
             bunt::println!(
                 "{$bold+red} of which {} is/are overdue{/$}",
                 results.overdue_todos.len(),
