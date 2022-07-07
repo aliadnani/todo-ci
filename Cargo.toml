@@ -3,13 +3,21 @@ name = "todo-ci"
 version = "0.1.0"
 edition = "2021"
 
+authors = ["Ali Adnan <ali.adnani@hotmail.com>"]
+license = "MIT"
+description = "A simple CI/CD CLI tool for registering and checking todos in code with deadlines"
+readme = "README.md"
+homepage = "https://github.com/aliadnani/todo-ci"
+repository = "https://github.com/aliadnani/todo-ci"
+keywords = ["todo", "cli", "ci", "cd"]
+categories = ["command-line-utilities"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+bunt = "0.2.6"
+chrono = "0.4.19"
 clap = { version = "3.2.8", features = ["derive"] }
 grep = "0.2.8"
 ignore = "0.4.18"
-regex = "1.6.0"
-termcolor = "1.1.3"
-time = { version = "0.3.11", features = ["parsing", "serde"] }
 walkdir = "2.3.2"
