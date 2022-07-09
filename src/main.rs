@@ -12,14 +12,13 @@ fn main() {
     // ...
 
     // Run todo search
-    let search = core::Search::new(args.root_directory, args.no_ignore);
-    let results = &search.run();
+    let search_results = core::search(args.root_directory, args.no_ignore);
 
     // Print results of search
     let printer = display::Printer::new(args.display_mode);
-    printer.print(results);
+    printer.print(&search_results);
 
-    if !results.overdue_todos.is_empty() && !args.no_error {
+    if !search_results.overdue_todos.is_empty() && !args.no_error {
         std::process::exit(1)
     }
 }
