@@ -3,22 +3,21 @@ mod core;
 mod display;
 
 use clap::Parser;
+use eyre::Result;
 
-fn main() {
+fn main() -> Result<()>{
     // Get CLI args
     let args = cli::Args::parse();
 
-    // Validate and transform CLI args
-    // ...
-
     // Run todo search
-    let search_results = core::search(args.root_directory, args.no_ignore);
+    let search_results = core::search(args.root_directory, args.no_ignore, args.ignore_pattern)?;
 
     // Print results of search
-    let printer = display::Printer::new(args.display_mode);
-    printer.print(&search_results);
+    display::print(args.display_mode, &search_results);
 
     if !search_results.overdue_todos.is_empty() && !args.no_error {
         std::process::exit(1)
-    }
+    };
+
+    Ok(())
 }

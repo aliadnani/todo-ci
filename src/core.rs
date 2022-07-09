@@ -1,6 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use chrono::{NaiveDate, Utc};
+use eyre::Result;
+use globset::Glob;
 use grep::{
     matcher::{Captures, Matcher},
     regex::RegexMatcher,
@@ -24,68 +26,80 @@ pub struct MalformedTodo {
 }
 
 #[derive(Debug)]
-pub struct TodoSearchResult {
-    pub valid_todos: Vec<Todo>,
-    pub overdue_todos: Vec<Todo>,
-    pub malformed_todos: Vec<MalformedTodo>,
-}
-
-#[derive(Debug)]
-pub struct TotalTodoSearchResult {
+pub struct TotalSearchResult {
     pub files_searched: i32,
     pub valid_todos: Vec<Todo>,
     pub overdue_todos: Vec<Todo>,
     pub malformed_todos: Vec<MalformedTodo>,
 }
 
+#[derive(Debug)]
+struct FileSearchResult {
+    valid_todos: Vec<Todo>,
+    overdue_todos: Vec<Todo>,
+    malformed_todos: Vec<MalformedTodo>,
+}
 
-pub fn search(root_directory: PathBuf, no_ignore: bool) -> TotalTodoSearchResult {
-    let mut result = TodoSearchResult {
+pub fn search(
+    root_directory: PathBuf,
+    no_ignore: bool,
+    ignore_pattern: String,
+) -> Result<TotalSearchResult> {
+    let mut result = FileSearchResult {
         valid_todos: vec![],
         overdue_todos: vec![],
         malformed_todos: vec![],
     };
 
-    let mut file_count = 0;
-    walk_files_and(|file| {
-        // TODO: Handle failures
-        if file.metadata().unwrap().is_file() {
-            let todos = &mut search_todos(file.path());
-            file_count += 1;
-            result.overdue_todos.append(&mut todos.overdue_todos);
-            result.valid_todos.append(&mut todos.valid_todos);
-            result.malformed_todos.append(&mut todos.malformed_todos);
-        }
-    }, root_directory, no_ignore);
+    let ignore_glob = Glob::new(&ignore_pattern)?.compile_matcher();
 
-    TotalTodoSearchResult {
+    let mut file_count = 0;
+    walk_files_and(
+        |file| {
+            // TODO: Handle failures
+            if file.metadata()?.is_file() && ignore_glob.is_match(file.path()) {
+                let todos = &mut search_todos(file.path())?;
+                file_count += 1;
+                result.overdue_todos.append(&mut todos.overdue_todos);
+                result.valid_todos.append(&mut todos.valid_todos);
+                result.malformed_todos.append(&mut todos.malformed_todos);
+            };
+            Ok(())
+        },
+        root_directory,
+        no_ignore,
+    )?;
+
+    Ok(TotalSearchResult {
         files_searched: file_count,
         valid_todos: result.valid_todos,
         overdue_todos: result.overdue_todos,
         malformed_todos: result.malformed_todos,
-    }
+    })
 }
 
-fn walk_files_and<F>(mut f: F, root_directory: PathBuf, no_ignore: bool)
+fn walk_files_and<F>(mut f: F, root_directory: PathBuf, no_ignore: bool) -> Result<()>
 where
-    F: FnMut(DirEntry),
+    F: FnMut(DirEntry) -> Result<()>,
 {
     let mut builder = WalkBuilder::new(&root_directory);
-    let walk = builder.standard_filters(!no_ignore).build();
+    let walk = builder
+        .standard_filters(!no_ignore)
+        .add_custom_ignore_filename(".tdignore")
+        .build();
 
     for file in walk.into_iter().filter_map(|file| file.ok()) {
-        f(file)
+        f(file)?;
     }
+    Ok(())
 }
 
-fn search_todos(file_path: &Path) -> TodoSearchResult {
-    // Matches into groups: @todo(<date>):<description>
-    // - date: has to be a 10 character string, no validation - I don't want to do it in regex
-    // - description: everything after the '):'
+/// Matches TODOs that follows the format: @todo(<date>):<description>
+fn search_todos(file_path: &Path) -> Result<FileSearchResult> {
     const PATTERN: &str = r"@todo\((?P<date>.{10})\):(?P<description>.*)";
 
     // TODO: Handle failures
-    let matcher = RegexMatcher::new_line_matcher(PATTERN).unwrap();
+    let matcher = RegexMatcher::new_line_matcher(PATTERN)?;
 
     let mut searcher = Searcher::new();
     let mut valid_todos: Vec<Todo> = vec![];
@@ -102,15 +116,15 @@ fn search_todos(file_path: &Path) -> TodoSearchResult {
                     || matcher.capture_index("date") != Some(1)
                     || matcher.capture_index("description") != Some(2)
                 {
+                    // Ok(true) is used to early return from search sink
                     return Ok(true);
                 }
 
                 // Parse date & description of 'todo'
-                // TODO: Handle failures
-                let mut captures = matcher.new_captures().unwrap();
-                matcher.captures(line.as_bytes(), &mut captures).unwrap();
+                let mut captures = matcher.new_captures()?;
+                matcher.captures(line.as_bytes(), &mut captures)?;
 
-                // TODO: Handle failures
+                // Unwraps here are ok - as we've already verified 3 capture groups
                 let date_string = &line[captures.get(1).unwrap()];
                 let description_string = &line[captures.get(2).unwrap()].trim();
 
@@ -144,13 +158,11 @@ fn search_todos(file_path: &Path) -> TodoSearchResult {
 
                 Ok(true)
             }),
-        )
-        // TODO: Handle failures
-        .unwrap();
+        )?;
 
-    TodoSearchResult {
+    Ok(FileSearchResult {
         valid_todos,
         overdue_todos,
         malformed_todos,
-    }
+    })
 }
