@@ -18,6 +18,8 @@ categories = ["command-line-utilities"]
 bunt = "0.2.6"
 chrono = "0.4.19"
 clap = { version = "3.2.8", features = ["derive"] }
+eyre = "0.6.8"
+globset = "0.4.9"
 grep = "0.2.8"
 ignore = "0.4.18"
 

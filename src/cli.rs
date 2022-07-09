@@ -31,6 +31,10 @@ pub struct Args {
     /// Root directory to check `todos` for
     #[clap(value_parser, default_value = "./")]
     pub root_directory: PathBuf,
+
+    /// Root directory to check `todos` for
+    #[clap(value_parser, default_value = "*")]
+    pub ignore_pattern: String,
     // /// Timezone to use for date checking
     // #[clap(value_parser, default_value = "+00:00")]
     // timezone_offset: UtcOffset,

@@ -4,18 +4,12 @@ A simple CI/CD CLI tool for registering and checking todos in code with deadline
 
 ## Usage
 
-### Installation
+### Checking TODOs
 
-Build from source 
-```bash
-cargo build --release
-sudo mv ./target/release/todo-ci /usr/bin/
-```
+Run `todo-ci` to check for overdue TODOs in the current directory
 
-`cargo`
-```bash
-cargo install todo-ci
-```
+[![asciicast](https://asciinema.org/a/FzpmPuyWCSpLZnkAGlDQCzHjd.svg)](https://asciinema.org/a/FzpmPuyWCSpLZnkAGlDQCzHjd)
+
 
 ### Registering TODOs
 
@@ -39,13 +33,21 @@ x match
 
 ```
 
+
+### Installation
+
+Build from source 
+```bash
+cargo build --release
+sudo mv ./target/release/todo-ci /usr/bin/
+```
+
+`cargo`
+```bash
+cargo install todo-ci
+```
+
 See `./tests/resources` for more examples
-
-### Checking TODOs
-
-Run `todo-ci` to check for overdue TODOs in the current directory
-
-[![asciicast](https://asciinema.org/a/FzpmPuyWCSpLZnkAGlDQCzHjd.svg)](https://asciinema.org/a/FzpmPuyWCSpLZnkAGlDQCzHjd)
 
 Run `todo-ci --help` for all options
 
@@ -87,7 +89,8 @@ OPTIONS:
 ## TODO
 
 - Write tests
-- Configurable timezone for deadline checking - currently just uses naive UTC
+- Docker image
+- Configurable timezone for deadline checking -  right now only naive UTC is being used
 - Detailed display mode that shows inline code snippets along with their todos (maybe using `bat`)
 - Configurable files to search/ignore TODOs for
 - General code cleanup
