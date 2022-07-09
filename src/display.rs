@@ -34,7 +34,6 @@ fn print_single(todo: &Todo, overdue: bool) {
 }
 
 pub fn print(mode: DisplayMode, results: &TotalSearchResult) {
-
     // Total stats
     bunt::println!("{$blue}Searched {} file(s):{/$}", results.files_searched);
     bunt::print!(

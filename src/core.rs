@@ -106,59 +106,58 @@ fn search_todos(file_path: &Path) -> Result<FileSearchResult> {
     let mut overdue_todos: Vec<Todo> = vec![];
     let mut malformed_todos: Vec<MalformedTodo> = vec![];
 
-    searcher
-        .search_path(
-            &matcher,
-            file_path,
-            UTF8(|lnum, line| {
-                // Regex group match validation
-                if matcher.capture_count() != 3
-                    || matcher.capture_index("date") != Some(1)
-                    || matcher.capture_index("description") != Some(2)
-                {
-                    // Ok(true) is used to early return from search sink
+    searcher.search_path(
+        &matcher,
+        file_path,
+        UTF8(|lnum, line| {
+            // Regex group match validation
+            if matcher.capture_count() != 3
+                || matcher.capture_index("date") != Some(1)
+                || matcher.capture_index("description") != Some(2)
+            {
+                // Ok(true) is used to early return from search sink
+                return Ok(true);
+            }
+
+            // Parse date & description of 'todo'
+            let mut captures = matcher.new_captures()?;
+            matcher.captures(line.as_bytes(), &mut captures)?;
+
+            // Unwraps here are ok - as we've already verified 3 capture groups
+            let date_string = &line[captures.get(1).unwrap()];
+            let description_string = &line[captures.get(2).unwrap()].trim();
+
+            // Validate date
+            let date = match NaiveDate::parse_from_str(date_string, "%Y-%m-%d") {
+                Ok(date) => date,
+                Err(_) => {
+                    malformed_todos.push(MalformedTodo {
+                        file: file_path.into(),
+                        line_number: lnum as i32,
+                        error: format!("{} is not a valid date.", date_string),
+                    });
                     return Ok(true);
                 }
+            };
 
-                // Parse date & description of 'todo'
-                let mut captures = matcher.new_captures()?;
-                matcher.captures(line.as_bytes(), &mut captures)?;
+            match Utc::now().date().naive_utc().cmp(&date) {
+                std::cmp::Ordering::Greater => overdue_todos.push(Todo {
+                    file: file_path.into(),
+                    line_number: lnum as i32,
+                    date,
+                    description: description_string.to_string(),
+                }),
+                _ => valid_todos.push(Todo {
+                    file: file_path.into(),
+                    line_number: lnum as i32,
+                    date,
+                    description: description_string.to_string(),
+                }),
+            }
 
-                // Unwraps here are ok - as we've already verified 3 capture groups
-                let date_string = &line[captures.get(1).unwrap()];
-                let description_string = &line[captures.get(2).unwrap()].trim();
-
-                // Validate date
-                let date = match NaiveDate::parse_from_str(date_string, "%Y-%m-%d") {
-                    Ok(date) => date,
-                    Err(_) => {
-                        malformed_todos.push(MalformedTodo {
-                            file: file_path.into(),
-                            line_number: lnum as i32,
-                            error: format!("{} is not a valid date.", date_string),
-                        });
-                        return Ok(true);
-                    }
-                };
-
-                match Utc::now().date().naive_utc().cmp(&date) {
-                    std::cmp::Ordering::Greater => overdue_todos.push(Todo {
-                        file: file_path.into(),
-                        line_number: lnum as i32,
-                        date,
-                        description: description_string.to_string(),
-                    }),
-                    _ => valid_todos.push(Todo {
-                        file: file_path.into(),
-                        line_number: lnum as i32,
-                        date,
-                        description: description_string.to_string(),
-                    }),
-                }
-
-                Ok(true)
-            }),
-        )?;
+            Ok(true)
+        }),
+    )?;
 
     Ok(FileSearchResult {
         valid_todos,
