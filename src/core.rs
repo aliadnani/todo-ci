@@ -57,7 +57,12 @@ pub fn search(
     walk_files_and(
         |file| {
             // TODO: Handle failures
-            if file.metadata()?.is_file() && ignore_glob.is_match(file.path()) {
+            if file.metadata()?.is_file()
+                && ignore_glob.is_match(file.path())
+                // Or else .tdignore will be search as well
+                // TODO: do this more elegantly
+                && file.path().file_name().unwrap() != ".tdignore"
+            {
                 let todos = &mut search_todos(file.path())?;
                 file_count += 1;
                 result.overdue_todos.append(&mut todos.overdue_todos);

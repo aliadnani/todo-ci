@@ -3,9 +3,9 @@ use std::path::Path;
 use chrono::NaiveDate;
 
 #[test]
-fn baseline_test() {
+fn overdue_todos() {
     let search_results = todo_ci::core::search(
-        Path::new("./tests/resources/base").to_path_buf(),
+        Path::new("./tests/resources/simple").to_path_buf(),
         false,
         "*".to_string(),
     )
@@ -25,6 +25,17 @@ fn baseline_test() {
         "Print something besides \"Hello World!\""
     );
     assert_eq!(search_results.overdue_todos[0].line_number, 3);
+}
+
+#[test]
+fn valid_todos() {
+    let search_results = todo_ci::core::search(
+        Path::new("./tests/resources/simple").to_path_buf(),
+        false,
+        "*".to_string(),
+    )
+    .unwrap();
+
     assert_eq!(
         search_results.valid_todos[0].file,
         Path::new("./tests/resources/base/file_with_todos.rs").to_path_buf()
