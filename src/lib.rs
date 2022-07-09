@@ -5,7 +5,7 @@ pub mod display;
 use clap::Parser;
 use eyre::Result;
 
-pub fn run() -> Result<()>{
+pub fn run() -> Result<()> {
     // Get CLI args
     let args = cli::Args::parse();
 
