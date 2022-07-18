@@ -15,7 +15,7 @@ pub fn run() -> Result<()> {
     // Print results of search
     display::print(args.display_mode, &search_results);
 
-    if !search_results.overdue_todos.is_empty() && !args.no_error {
+    if search_results.statistics.overdue_todo_count > 0 && !args.no_error {
         std::process::exit(1)
     };
 
