@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::{path::{Path, PathBuf}, cmp::Ordering};
 
 use chrono::{NaiveDate, Utc};
 use eyre::Result;
@@ -11,63 +11,69 @@ use grep::{
 use ignore::{DirEntry, WalkBuilder};
 
 #[derive(Debug)]
+pub enum TodoState {
+    Valid,
+    Overdue,
+    Malformed,
+}
+
+#[derive(Debug)]
 pub struct Todo {
     pub file: PathBuf,
     pub line_number: i32,
-    pub date: NaiveDate,
+    pub date: Option<NaiveDate>,
     pub description: String,
+    pub state: TodoState,
 }
 
 #[derive(Debug)]
-pub struct MalformedTodo {
-    pub file: PathBuf,
-    pub line_number: i32,
-    pub error: String,
+pub struct SearchResult {
+    pub todos: Vec<Todo>,
+    pub statistics: TodoStatistics,
 }
 
 #[derive(Debug)]
-pub struct TotalSearchResult {
+pub struct TodoStatistics {
     pub files_searched: i32,
-    pub valid_todos: Vec<Todo>,
-    pub overdue_todos: Vec<Todo>,
-    pub malformed_todos: Vec<MalformedTodo>,
-}
-
-#[derive(Debug)]
-struct FileSearchResult {
-    valid_todos: Vec<Todo>,
-    overdue_todos: Vec<Todo>,
-    malformed_todos: Vec<MalformedTodo>,
+    pub valid_todo_count: i32,
+    pub overdue_todo_count: i32,
+    pub malformed_todo_count: i32,
 }
 
 pub fn search(
     root_directory: PathBuf,
     no_ignore: bool,
     ignore_pattern: String,
-) -> Result<TotalSearchResult> {
-    let mut result = FileSearchResult {
-        valid_todos: vec![],
-        overdue_todos: vec![],
-        malformed_todos: vec![],
+) -> Result<SearchResult> {
+    let mut todos: Vec<Todo> = vec![];
+    let mut statistics = TodoStatistics {
+        files_searched: 0,
+        valid_todo_count: 0,
+        overdue_todo_count: 0,
+        malformed_todo_count: 0,
     };
 
     let ignore_glob = Glob::new(&ignore_pattern)?.compile_matcher();
 
-    let mut file_count = 0;
     walk_files_and(
         |file| {
-            // TODO: Handle failures
             if file.metadata()?.is_file()
                 && ignore_glob.is_match(file.path())
-                // Or else .tdignore will be search as well
+                // Prevents .tdignore from being searched as well
                 // TODO: do this more elegantly
                 && file.path().file_name().unwrap() != ".tdignore"
             {
-                let todos = &mut search_todos(file.path())?;
-                file_count += 1;
-                result.overdue_todos.append(&mut todos.overdue_todos);
-                result.valid_todos.append(&mut todos.valid_todos);
-                result.malformed_todos.append(&mut todos.malformed_todos);
+                let file_search_result = &mut search_todos(file.path())?;
+
+                // Aggregate statistics
+                statistics.files_searched += 1;
+                statistics.valid_todo_count += file_search_result.statistics.valid_todo_count;
+                statistics.overdue_todo_count += file_search_result.statistics.overdue_todo_count;
+                statistics.malformed_todo_count +=
+                    file_search_result.statistics.malformed_todo_count;
+
+                // Aggregate TODOs
+                todos.append(&mut file_search_result.todos)
             };
             Ok(())
         },
@@ -75,12 +81,7 @@ pub fn search(
         no_ignore,
     )?;
 
-    Ok(TotalSearchResult {
-        files_searched: file_count,
-        valid_todos: result.valid_todos,
-        overdue_todos: result.overdue_todos,
-        malformed_todos: result.malformed_todos,
-    })
+    Ok(SearchResult { todos, statistics })
 }
 
 fn walk_files_and<F>(mut f: F, root_directory: PathBuf, no_ignore: bool) -> Result<()>
@@ -99,17 +100,20 @@ where
     Ok(())
 }
 
+/// Searches for TODOs in a file as well as their statistics
+///
 /// Matches TODOs that follows the format: @todo(<date>):<description>
-fn search_todos(file_path: &Path) -> Result<FileSearchResult> {
+fn search_todos(file_path: &Path) -> Result<SearchResult> {
     const PATTERN: &str = r"@todo\((?P<date>.{10})\):(?P<description>.*)";
 
     // TODO: Handle failures
     let matcher = RegexMatcher::new_line_matcher(PATTERN)?;
 
     let mut searcher = Searcher::new();
-    let mut valid_todos: Vec<Todo> = vec![];
-    let mut overdue_todos: Vec<Todo> = vec![];
-    let mut malformed_todos: Vec<MalformedTodo> = vec![];
+    let mut todos: Vec<Todo> = vec![];
+    let mut valid_todo_count = 0;
+    let mut overdue_todo_count = 0;
+    let mut malformed_todo_count = 0;
 
     searcher.search_path(
         &matcher,
@@ -136,37 +140,52 @@ fn search_todos(file_path: &Path) -> Result<FileSearchResult> {
             let date = match NaiveDate::parse_from_str(date_string, "%Y-%m-%d") {
                 Ok(date) => date,
                 Err(_) => {
-                    malformed_todos.push(MalformedTodo {
+                    todos.push(Todo {
                         file: file_path.into(),
                         line_number: lnum as i32,
-                        error: format!("{} is not a valid date.", date_string),
+                        date: None,
+                        description: format!("{} is not a valid date.", date_string),
+                        state: TodoState::Malformed,
                     });
+                    malformed_todo_count += 1;
                     return Ok(true);
                 }
             };
 
             match Utc::now().date().naive_utc().cmp(&date) {
-                std::cmp::Ordering::Greater => overdue_todos.push(Todo {
-                    file: file_path.into(),
-                    line_number: lnum as i32,
-                    date,
-                    description: description_string.to_string(),
-                }),
-                _ => valid_todos.push(Todo {
-                    file: file_path.into(),
-                    line_number: lnum as i32,
-                    date,
-                    description: description_string.to_string(),
-                }),
+                Ordering::Greater => {
+                    todos.push(Todo {
+                        file: file_path.into(),
+                        line_number: lnum as i32,
+                        date: Some(date),
+                        description: description_string.to_string(),
+                        state: TodoState::Overdue,
+                    });
+                    overdue_todo_count += 1;
+                }
+                _ => {
+                    todos.push(Todo {
+                        file: file_path.into(),
+                        line_number: lnum as i32,
+                        date: Some(date),
+                        description: description_string.to_string(),
+                        state: TodoState::Valid,
+                    });
+                    valid_todo_count += 1;
+                }
             }
 
             Ok(true)
         }),
     )?;
 
-    Ok(FileSearchResult {
-        valid_todos,
-        overdue_todos,
-        malformed_todos,
+    Ok(SearchResult {
+        todos,
+        statistics: TodoStatistics {
+            files_searched: 1,
+            valid_todo_count: valid_todo_count,
+            overdue_todo_count: overdue_todo_count,
+            malformed_todo_count: malformed_todo_count,
+        },
     })
 }
