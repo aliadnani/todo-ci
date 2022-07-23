@@ -24,7 +24,6 @@ pub struct Args {
     ///- concise: total number of valid + overdue todos {n}
     ///- overdue-only: total number of valid + overdue todos + details of overdue todos {n}
     ///- default: total number of valid + overdue todos + details of all todos {n}
-    ///- [PLANNED] detailed: total number of valid + overdue todos + details of all todos with inline code snippet {n}{n}
     #[clap(
         short = 'd',
         long = "display-mode",

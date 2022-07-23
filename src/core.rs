@@ -64,7 +64,7 @@ pub fn search(
             if file.metadata()?.is_file()
                 && ignore_glob.is_match(file.path())
                 // Prevents .tdignore from being searched as well
-                // TODO: do this more elegantly
+                // Not sure how this can be done more elegantly
                 && file.path().file_name().unwrap() != ".tdignore"
             {
                 let file_search_result = &mut search_todos(file.path(), fixed_offset)?;
@@ -110,7 +110,6 @@ where
 fn search_todos(file_path: &Path, fixed_offset: &FixedOffset) -> Result<SearchResult> {
     const PATTERN: &str = r"@todo\((?P<date>.{10})\):(?P<description>.*)";
 
-    // TODO: Handle failures
     let matcher = RegexMatcher::new_line_matcher(PATTERN)?;
 
     let mut searcher = Searcher::new();
