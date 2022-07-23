@@ -1,96 +1,81 @@
 # todo-ci
 
-A simple CI/CD CLI tool for registering and checking todos in code with deadlines
+Check your code TODOs (and fail your ci/cd if they're overdue) 
 
-## Usage
+## Quickstart
 
-### Checking TODOs
+Write your todos in the format: `@todo(YYYY-MM-DD): A description of a todo...`
+
+```rust
+fn main() {
+    // @todo(2022-08-10): Print something besides "Hello World!"
+    println!("Hello World!");
+
+    print!("Hello World again!");  // @todo(2022-07-10): use `println` instead of `print`
+}
+```
 
 Run `todo-ci` to check for overdue TODOs in the current directory
 
-[![asciicast](https://asciinema.org/a/FzpmPuyWCSpLZnkAGlDQCzHjd.svg)](https://asciinema.org/a/FzpmPuyWCSpLZnkAGlDQCzHjd)
-
-
-### Registering TODOs
-
-Note down TODOs in code following the format `@todo(YYYY-MM-DD): A description of a todo...`
-- The TODO must be on one line
-- The description must follow the `@todo(YYYY-MM-DD):` and extend until the end of the line
-
-Example:
-
-```scala
-import scala.util.Random
-
-val x: Int = Random.nextInt(10)
-
-// @todo(2022-09-19): Add a default case
-x match
-  case 0 => "zero" 
-  case 1 => "one"
-  case 2 => "two" // @todo(2022-07-23): A TODO at the end of a line 
-  case 3 => "three" 
-
-```
-
-
-### Installation
-
-Build from source 
 ```bash
-cargo build --release
-sudo mv ./target/release/todo-ci /usr/bin/
+# Local installation
+todo-ci ./
+
+# Docker
+docker run -v $(pwd):/volume -it ghcr.io/aliadnani/todo-ci:latest /volume
 ```
 
-`cargo`
+
+![todo-ci](docs/todo-ci.gif)
+
+## Usecase
+
+Integrate `todo-ci` in the ci/cd platform of choice for checking TODOs in code. If any overdue TODOs are found, a `1` exit code is emitted, hence failing ci/cd runs.
+
+## Installation
+
+Using `cargo`:
+
 ```bash
 cargo install todo-ci
 ```
 
-See `./tests/resources` for more examples
-
-Run `todo-ci --help` for all options
+Using `docker`:
 
 ```bash
-❯ todo-ci --help
-todo-ci 0.1.0
-todo-ci: A simple ci tool to check overdue todos
+# Just pull the latest image
+docker pull ghcr.io/aliadnani/todo-ci:latest
+```
 
-USAGE:
-    todo-ci [OPTIONS] [ROOT_DIRECTORY]
+## Features
 
-ARGS:
-    <ROOT_DIRECTORY>    Root directory to check `todos` for [default: ./]
-
+```
 OPTIONS:
     -d, --display-mode <DISPLAY_MODE>
             Display mode:
              - concise: total number of valid + overdue todos
              - overdue-only: total number of valid + overdue todos + details of overdue todos
              - default: total number of valid + overdue todos + details of all todos
-             - [PLANNED] detailed: total number of valid + overdue todos + details of all todos with
-            inline code snippet
 
              [default: default] [possible values: concise, overdue-only, default]
 
     -e, --no-error
-            Flag to disable returning system error code (1) if there are overdue todos
+            For disabling returning system error code (1) if there are overdue todos
 
     -h, --help
             Print help information
 
     -n, --no-ignore
-            Flag to disable ignored files by default (.gitignore, hidden files, etc.)
+            For disabling ignored files by default (.gitignore, hidden files, etc.)
+
+    -p, --pattern <IGNORE_PATTERN>
+            Pattern to check `todos` for (i.e. `*.rs` , `main.*`, etc.) [default: *]
+
+    -t, --timezone-offset <TIMEZONE_OFFSET>
+            Timezone to use for date checking [default: +00:00]
 
     -V, --version
             Print version information
 ```
 
-## TODO
 
-- Write tests
-- Docker image
-- Configurable timezone for deadline checking -  right now only naive UTC is being used
-- Detailed display mode that shows inline code snippets along with their todos (maybe using `bat`)
-- Configurable files to search/ignore TODOs for
-- General code cleanup
