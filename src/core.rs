@@ -1,6 +1,9 @@
-use std::{path::{Path, PathBuf}, cmp::Ordering};
+use std::{
+    cmp::Ordering,
+    path::{Path, PathBuf},
+};
 
-use chrono::{NaiveDate, Utc};
+use chrono::{FixedOffset, NaiveDate, TimeZone, Utc};
 use eyre::Result;
 use globset::Glob;
 use grep::{
@@ -44,6 +47,7 @@ pub fn search(
     root_directory: PathBuf,
     no_ignore: bool,
     ignore_pattern: String,
+    fixed_offset: &FixedOffset,
 ) -> Result<SearchResult> {
     let mut todos: Vec<Todo> = vec![];
     let mut statistics = TodoStatistics {
@@ -63,7 +67,7 @@ pub fn search(
                 // TODO: do this more elegantly
                 && file.path().file_name().unwrap() != ".tdignore"
             {
-                let file_search_result = &mut search_todos(file.path())?;
+                let file_search_result = &mut search_todos(file.path(), fixed_offset)?;
 
                 // Aggregate statistics
                 statistics.files_searched += 1;
@@ -103,7 +107,7 @@ where
 /// Searches for TODOs in a file as well as their statistics
 ///
 /// Matches TODOs that follows the format: @todo(<date>):<description>
-fn search_todos(file_path: &Path) -> Result<SearchResult> {
+fn search_todos(file_path: &Path, fixed_offset: &FixedOffset) -> Result<SearchResult> {
     const PATTERN: &str = r"@todo\((?P<date>.{10})\):(?P<description>.*)";
 
     // TODO: Handle failures
@@ -138,7 +142,7 @@ fn search_todos(file_path: &Path) -> Result<SearchResult> {
 
             // Validate date
             let date = match NaiveDate::parse_from_str(date_string, "%Y-%m-%d") {
-                Ok(date) => date,
+                Ok(date) => fixed_offset.from_local_date(&date).unwrap(),
                 Err(_) => {
                     todos.push(Todo {
                         file: file_path.into(),
@@ -152,12 +156,13 @@ fn search_todos(file_path: &Path) -> Result<SearchResult> {
                 }
             };
 
-            match Utc::now().date().naive_utc().cmp(&date) {
+            // match Utc::now().date().naive_utc().cmp(&date_time) {
+            match Utc::now().with_timezone(fixed_offset).date().cmp(&date) {
                 Ordering::Greater => {
                     todos.push(Todo {
                         file: file_path.into(),
                         line_number: lnum as i32,
-                        date: Some(date),
+                        date: Some(date.naive_local()),
                         description: description_string.to_string(),
                         state: TodoState::Overdue,
                     });
@@ -167,7 +172,7 @@ fn search_todos(file_path: &Path) -> Result<SearchResult> {
                     todos.push(Todo {
                         file: file_path.into(),
                         line_number: lnum as i32,
-                        date: Some(date),
+                        date: Some(date.naive_local()),
                         description: description_string.to_string(),
                         state: TodoState::Valid,
                     });
@@ -183,9 +188,9 @@ fn search_todos(file_path: &Path) -> Result<SearchResult> {
         todos,
         statistics: TodoStatistics {
             files_searched: 1,
-            valid_todo_count: valid_todo_count,
-            overdue_todo_count: overdue_todo_count,
-            malformed_todo_count: malformed_todo_count,
+            valid_todo_count,
+            overdue_todo_count,
+            malformed_todo_count,
         },
     })
 }

@@ -1,11 +1,14 @@
 use std::path::Path;
 
+use chrono::FixedOffset;
+
 #[test]
 fn default_ignores() {
     let search_results = todo_ci::core::search(
         Path::new("./tests/resources/ignored_default").to_path_buf(),
         false,
         "*".to_string(),
+        &FixedOffset::west(0),
     )
     .unwrap();
 
@@ -13,13 +16,13 @@ fn default_ignores() {
     assert_eq!(search_results.statistics.valid_todo_count, 1);
 }
 
-
 #[test]
 fn default_ignores_disabled() {
     let search_results = todo_ci::core::search(
         Path::new("./tests/resources/ignored_default").to_path_buf(),
         true,
         "*".to_string(),
+        &FixedOffset::west(0),
     )
     .unwrap();
 
@@ -34,6 +37,7 @@ fn tdignore_always() {
         Path::new("./tests/resources/ignored_tdignore").to_path_buf(),
         false,
         "*".to_string(),
+        &FixedOffset::west(0),
     )
     .unwrap();
 
@@ -44,6 +48,7 @@ fn tdignore_always() {
         Path::new("./tests/resources/ignored_tdignore").to_path_buf(),
         true,
         "*".to_string(),
+        &FixedOffset::west(0),
     )
     .unwrap();
 

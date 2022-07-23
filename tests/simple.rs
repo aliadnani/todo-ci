@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use chrono::NaiveDate;
+use chrono::{FixedOffset, NaiveDate};
 use todo_ci::core::{Todo, TodoState};
 
 #[test]
@@ -9,6 +9,7 @@ fn overdue_todos() {
         Path::new("./tests/resources/simple").to_path_buf(),
         false,
         "*".to_string(),
+        &FixedOffset::west(0),
     )
     .unwrap();
 
@@ -53,6 +54,7 @@ fn valid_todos() {
         Path::new("./tests/resources/simple").to_path_buf(),
         false,
         "*".to_string(),
+        &FixedOffset::west(0),
     )
     .unwrap();
 
