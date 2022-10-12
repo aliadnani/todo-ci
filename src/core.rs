@@ -14,6 +14,9 @@ use grep::{
 use ignore::{DirEntry, WalkBuilder};
 
 #[derive(Debug)]
+/// Valid: TODO is valid
+/// Overdue: TODO is overdue
+/// Malformed: TODO has a malformed date format
 pub enum TodoState {
     Valid,
     Overdue,
@@ -88,6 +91,7 @@ pub fn search(
     Ok(SearchResult { todos, statistics })
 }
 
+/// Iterates over files in a specified directory and runs a function with the file as an arguement
 fn walk_files_and<F>(mut f: F, root_directory: PathBuf, no_ignore: bool) -> Result<()>
 where
     F: FnMut(DirEntry) -> Result<()>,
@@ -95,6 +99,7 @@ where
     let mut builder = WalkBuilder::new(&root_directory);
     let walk = builder
         .standard_filters(!no_ignore)
+        // Hard-coded
         .add_custom_ignore_filename(".tdignore")
         .build();
 
@@ -127,7 +132,8 @@ fn search_todos(file_path: &Path, fixed_offset: &FixedOffset) -> Result<SearchRe
                 || matcher.capture_index("date") != Some(1)
                 || matcher.capture_index("description") != Some(2)
             {
-                // Ok(true) is used to early return from search sink
+                // Early return if matched string is somehow not valid
+                // `true` signals to the search sink to continue searching
                 return Ok(true);
             }
 
@@ -137,7 +143,7 @@ fn search_todos(file_path: &Path, fixed_offset: &FixedOffset) -> Result<SearchRe
 
             // Unwraps here are ok - as we've already verified 3 capture groups
             let date_string = &line[captures.get(1).unwrap()];
-            let description_string = &line[captures.get(2).unwrap()].trim();
+            let description_string = line[captures.get(2).unwrap()].trim();
 
             // Validate date
             let date = match NaiveDate::parse_from_str(date_string, "%Y-%m-%d") {
@@ -155,30 +161,33 @@ fn search_todos(file_path: &Path, fixed_offset: &FixedOffset) -> Result<SearchRe
                 }
             };
 
-            // match Utc::now().date().naive_utc().cmp(&date_time) {
-            match Utc::now().with_timezone(fixed_offset).date().cmp(&date) {
+            // Validate expired
+            let todo_expired = match Utc::now().with_timezone(fixed_offset).date().cmp(&date) {
                 Ordering::Greater => {
-                    todos.push(Todo {
-                        file: file_path.into(),
-                        line_number: lnum as i32,
-                        date: Some(date.naive_local()),
-                        description: description_string.to_string(),
-                        state: TodoState::Overdue,
-                    });
                     overdue_todo_count += 1;
+                    true
                 }
                 _ => {
-                    todos.push(Todo {
-                        file: file_path.into(),
-                        line_number: lnum as i32,
-                        date: Some(date.naive_local()),
-                        description: description_string.to_string(),
-                        state: TodoState::Valid,
-                    });
                     valid_todo_count += 1;
+                    false
                 }
-            }
+            };
 
+            todos.push(Todo {
+                file: file_path.into(),
+                line_number: lnum as i32,
+                date: Some(date.naive_local()),
+                description: description_string.to_string(),
+                state: {
+                    if todo_expired {
+                        TodoState::Overdue
+                    } else {
+                        TodoState::Valid
+                    }
+                },
+            });
+
+            // `true` signals to the search sink to continue searching
             Ok(true)
         }),
     )?;
@@ -186,6 +195,7 @@ fn search_todos(file_path: &Path, fixed_offset: &FixedOffset) -> Result<SearchRe
     Ok(SearchResult {
         todos,
         statistics: TodoStatistics {
+            // fn search_todos() only runs for one file - hence we hard-code to one
             files_searched: 1,
             valid_todo_count,
             overdue_todo_count,
