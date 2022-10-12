@@ -4,6 +4,7 @@ pub mod display;
 
 use clap::Parser;
 use eyre::Result;
+use termcolor::{ColorChoice, StandardStream};
 
 /// Main entry point of application - is seperate from main.rs and as a library for more ergonomic testing
 pub fn run() -> Result<()> {
@@ -19,7 +20,13 @@ pub fn run() -> Result<()> {
     )?;
 
     // Print results of search
-    display::print(args.display_mode, &search_results, &args.timezone_offset);
+    let mut stdout = StandardStream::stdout(ColorChoice::Always);
+    display::print(
+        &mut stdout,
+        args.display_mode,
+        &search_results,
+        &args.timezone_offset,
+    );
 
     if search_results.statistics.overdue_todo_count > 0 && !args.no_error {
         std::process::exit(1)

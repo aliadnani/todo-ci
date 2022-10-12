@@ -1,25 +1,31 @@
 use chrono::{FixedOffset, Utc};
+use termcolor::StandardStream;
 
 use crate::{
     cli::DisplayMode,
     core::{SearchResult, Todo, TodoState},
 };
 
-fn print_single(todo: &Todo, fixed_offset: &FixedOffset) {
+fn print_single(output_target: &mut StandardStream, todo: &Todo, fixed_offset: &FixedOffset) {
+    let mut output_target = output_target;
     match todo.state {
         TodoState::Valid | TodoState::Overdue => {
             if matches!(todo.state, TodoState::Overdue) {
-                bunt::println!(
+                bunt::writeln!(
+                    output_target,
                     "{$bold+red}TODO@ {$underline} {}:{}{/$} [overdue]{/$}",
                     &todo.file.as_path().display().to_string(),
                     &todo.line_number
                 )
+                .expect("Could not write to output.");
             } else {
-                bunt::println!(
+                bunt::writeln!(
+                    output_target,
                     "{$bold}TODO@{/$} {$underline} {}:{}{/$}",
                     &todo.file.as_path().display().to_string(),
                     &todo.line_number
                 )
+                .expect("Could not write to output.");
             }
 
             let date_str = &todo
@@ -38,52 +44,78 @@ fn print_single(todo: &Todo, fixed_offset: &FixedOffset) {
                 )
                 .num_days();
 
-            bunt::println!(
+            bunt::writeln!(
+                output_target,
                 "  {$magenta+dimmed}Due:        {/$} {} ({} days)",
                 date_str,
                 day_difference
-            );
-            bunt::println!("  {$blue+dimmed}Description:{/$} {}", &todo.description);
+            )
+            .expect("Could not write to output.");
+            bunt::writeln!(
+                output_target,
+                "  {$blue+dimmed}Description:{/$} {}",
+                &todo.description
+            )
+            .expect("Could not write to output.");
         }
         TodoState::Malformed => {
-            bunt::println!(
+            bunt::writeln!(
+                output_target,
                 "{$bold+yellow}TODO@ {$underline} {}:{}{/$} is malformed!{/$}",
                 &todo.file.as_path().display().to_string(),
                 &todo.line_number
-            );
-            bunt::println!("  {$yellow+dimmed}Description:{/$} {}", &todo.description);
+            )
+            .expect("Could not write to output.");
+            bunt::writeln!(
+                output_target,
+                "  {$yellow+dimmed}Description:{/$} {}",
+                &todo.description
+            )
+            .expect("Could not write to output.");
         }
     }
 
-    bunt::println!();
+    bunt::writeln!(output_target).expect("Could not write to output.");
 }
 
-pub fn print(mode: DisplayMode, results: &SearchResult, fixed_offset: &FixedOffset) {
+pub fn print(
+    output_target: &mut StandardStream,
+    mode: DisplayMode,
+    results: &SearchResult,
+    fixed_offset: &FixedOffset,
+) {
+    let mut output_target = output_target;
     // Individual TODO details
     if !matches!(mode, DisplayMode::Concise) {
         results.todos.iter().for_each(|todo| {
             if !matches!(mode, DisplayMode::OverdueOnly) {
-                print_single(todo, fixed_offset)
+                print_single(&mut output_target, todo, fixed_offset)
             }
         })
     }
 
     // Total stats
-    bunt::println!(
+    bunt::writeln!(
+        output_target,
         "{$green+intense}Searched {} file(s):{/$}",
         results.statistics.files_searched
-    );
-    bunt::print!(
+    )
+    .expect("Could not write to output.");
+    bunt::write!(
+        output_target,
         "{$bold}{} todo(s) found{/$}",
         results.statistics.valid_todo_count + results.statistics.overdue_todo_count
-    );
+    )
+    .expect("Could not write to output.");
 
     if results.statistics.overdue_todo_count > 0 {
-        bunt::println!(
+        bunt::writeln!(
+            output_target,
             "{$bold+red} of which {} is/are overdue{/$}",
             results.statistics.overdue_todo_count,
-        );
+        )
+        .expect("Could not write to output.");
     } else {
-        bunt::println!();
+        bunt::writeln!(output_target).expect("Could not write to output.");
     }
 }
