@@ -5,6 +5,7 @@ pub mod display;
 use clap::Parser;
 use eyre::Result;
 
+/// Main entry point of application - is seperate from main.rs and as a library for more ergonomic testing
 pub fn run() -> Result<()> {
     // Get CLI args
     let args = cli::Args::parse();
