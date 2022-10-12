@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use chrono::FixedOffset;
-use clap::{builder::TypedValueParser, clap_derive::ArgEnum, Parser};
+use clap::{builder::TypedValueParser, Parser, ValueEnum, error::ErrorKind};
 use grep::{
     matcher::{Captures, Matcher},
     regex::RegexMatcher,
@@ -9,14 +9,14 @@ use grep::{
 
 /// todo-ci: A simple ci tool to check overdue todos
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
+#[command(author, version, about, long_about = None)]
 pub struct Args {
     /// For disabling ignored files by default (.gitignore, hidden files, etc.)
-    #[clap(short = 'n', long = "no-ignore", parse(from_flag))]
+    #[arg(short = 'n', long = "no-ignore")]
     pub no_ignore: bool,
 
     /// For disabling returning system error code (1) if there are overdue todos
-    #[clap(short = 'e', long = "no-error", parse(from_flag))]
+    #[arg(short = 'e', long = "no-error")]
     pub no_error: bool,
 
     /// Display mode:
@@ -24,28 +24,28 @@ pub struct Args {
     ///- concise: total number of valid + overdue todos {n}
     ///- overdue-only: total number of valid + overdue todos + details of overdue todos {n}
     ///- default: total number of valid + overdue todos + details of all todos {n}
-    #[clap(
+    #[arg(
+        value_enum,
+        rename_all = "kebab_case",
         short = 'd',
         long = "display-mode",
-        arg_enum,
         default_value = "default"
     )]
     pub display_mode: DisplayMode,
 
     /// Root directory to check `todos` for
-    #[clap(value_parser, default_value = "./")]
+    #[arg(value_parser, default_value = "./")]
     pub root_directory: PathBuf,
 
     /// Pattern to check `todos` for (i.e. `*.rs` , `main.*`, etc.)
-    #[clap(short = 'p', long = "pattern", value_parser, default_value = "*")]
+    #[arg(short = 'p', long = "pattern", value_parser, default_value = "*")]
     pub ignore_pattern: String,
     /// Timezone to use for date checking
-    #[clap(short = 't', long = "timezone-offset", value_parser = FixedOffsetParser, default_value = "+00:00", allow_hyphen_values = true)]
+    #[arg(short = 't', long = "timezone-offset", value_parser = FixedOffsetParser, default_value = "+00:00", allow_hyphen_values = true)]
     pub timezone_offset: FixedOffset,
 }
 
-#[derive(ArgEnum, Debug, Clone)] // ArgEnum here
-#[clap(rename_all = "kebab_case")]
+#[derive(ValueEnum, Debug, Clone)] 
 pub enum DisplayMode {
     Concise,
     OverdueOnly,
@@ -77,7 +77,7 @@ impl TypedValueParser for FixedOffsetParser {
         // Regex group match validation
         if matcher.capture_count() != 4 {
             Err(clap::Error::raw(
-                clap::ErrorKind::ValueValidation,
+                ErrorKind::ValueValidation,
                 "UTC offset does not follow the format [+|-][HH]:[SS]",
             ))
         } else {
@@ -97,20 +97,5 @@ impl TypedValueParser for FixedOffsetParser {
                 Ok(FixedOffset::west(offset_seconds))
             }
         }
-    }
-
-    fn parse(
-        &self,
-        cmd: &clap::Command,
-        arg: Option<&clap::Arg>,
-        value: std::ffi::OsString,
-    ) -> Result<Self::Value, clap::Error> {
-        self.parse_ref(cmd, arg, &value)
-    }
-
-    fn possible_values(
-        &self,
-    ) -> Option<Box<dyn Iterator<Item = clap::PossibleValue<'static>> + '_>> {
-        None
     }
 }

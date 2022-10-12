@@ -16,11 +16,11 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 bunt = "0.2.6"
-chrono = "0.4.19"
-clap = { version = "3.2.8", features = ["derive"] }
+chrono = "0.4.22"
+clap = { version = "4.0.14", features = ["derive"] }
 eyre = "0.6.8"
 globset = "0.4.9"
-grep = "0.2.8"
+grep = "0.2.10"
 ignore = "0.4.18"
 
 [profile.release]
