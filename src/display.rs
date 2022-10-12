@@ -60,7 +60,6 @@ fn print_single(todo: &Todo, fixed_offset: &FixedOffset) {
 
 pub fn print(mode: DisplayMode, results: &SearchResult, fixed_offset: &FixedOffset) {
     // Individual TODO details
-    bunt::println!();
     if !matches!(mode, DisplayMode::Concise) {
         results.todos.iter().for_each(|todo| {
             if !matches!(mode, DisplayMode::OverdueOnly) {
