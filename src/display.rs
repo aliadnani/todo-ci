@@ -1,12 +1,12 @@
 use chrono::{FixedOffset, Utc};
-use termcolor::StandardStream;
+use termcolor::WriteColor;
 
 use crate::{
     cli::DisplayMode,
     core::{SearchResult, Todo, TodoState},
 };
 
-fn print_single(output_target: &mut StandardStream, todo: &Todo, fixed_offset: &FixedOffset) {
+fn print_single(output_target: &mut dyn WriteColor, todo: &Todo, fixed_offset: &FixedOffset) {
     let mut output_target = output_target;
     match todo.state {
         TodoState::Valid | TodoState::Overdue => {
@@ -79,7 +79,7 @@ fn print_single(output_target: &mut StandardStream, todo: &Todo, fixed_offset: &
 }
 
 pub fn print(
-    output_target: &mut StandardStream,
+    output_target: &mut dyn WriteColor,
     mode: DisplayMode,
     results: &SearchResult,
     fixed_offset: &FixedOffset,
@@ -88,7 +88,8 @@ pub fn print(
     // Individual TODO details
     if !matches!(mode, DisplayMode::Concise) {
         results.todos.iter().for_each(|todo| {
-            if !matches!(mode, DisplayMode::OverdueOnly) {
+            if !matches!(mode, DisplayMode::OverdueOnly) || matches!(todo.state, TodoState::Overdue)
+            {
                 print_single(&mut output_target, todo, fixed_offset)
             }
         })
