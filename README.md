@@ -1,8 +1,8 @@
 # todo-ci
 
-Check your code TODOs (and fail your ci/cd if they're overdue) 
+Check for TODOs in code with deadlines 
 
-## Quickstart
+## Quick Start
 
 Write your todos in the format: `@todo(YYYY-MM-DD): A description of a todo...`
 
@@ -10,12 +10,10 @@ Write your todos in the format: `@todo(YYYY-MM-DD): A description of a todo...`
 fn main() {
     // @todo(2022-08-10): Print something besides "Hello World!"
     println!("Hello World!");
-
-    print!("Hello World again!");  // @todo(2022-07-10): use `println` instead of `print`
 }
 ```
 
-Run `todo-ci` to check for overdue TODOs in the current directory
+Run `todo-ci <directory>` to check for overdue TODOs in the specified directory
 
 ```bash
 # Local installation
@@ -25,12 +23,13 @@ todo-ci ./
 docker run -v $(pwd):/volume -it ghcr.io/aliadnani/todo-ci:latest /volume
 ```
 
-
 ![todo-ci](docs/todo-ci.gif)
 
-## Usecase
+## Use Case
 
-Integrate `todo-ci` in the ci/cd platform of choice for checking TODOs in code. If any overdue TODOs are found, a `1` exit code is emitted, hence failing ci/cd runs.
+Run `todo-ci` as part of your `ci/cd` runs to check for any outstanding TODOs in code. If any are found, a `1` exit code is emitted, hence failing the run.
+
+`todo-ci` is similar to [todo-or-die](https://github.com/davidpdrsn/todo-or-die) & [todo-macro](https://github.com/rgwood/todo-macro) but without the use of Rust macros and instead run as a seperate CLI tool. This allows `todo-ci` to be language agnostic and lets you run it in any any project using a langauge that supports comments.
 
 ## Installation
 
