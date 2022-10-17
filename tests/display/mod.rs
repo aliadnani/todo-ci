@@ -8,7 +8,6 @@ use todo_ci::{
     display,
 };
 
-
 fn sample_todo_search_result() -> SearchResult {
     SearchResult {
         todos: vec![
@@ -59,7 +58,7 @@ fn test_default_terminal_output() {
     let output = String::from_utf8_lossy(buffer.as_slice());
 
     // Assertions are intentionally not very specific -
-    // otherwise they would just break often even on minor changes to the printer 
+    // otherwise they would just break often even on minor changes to the printer
     assert!(output.contains("Valid TODO on line 3"));
     assert!(output.contains("Expired TODO on line 5"));
     assert!(output.contains("XX is not a valid date."));
@@ -84,7 +83,7 @@ fn test_overdue_only_terminal_output() {
     let output = String::from_utf8_lossy(buffer.as_slice());
 
     // Assertions are intentionally not very specific -
-    // otherwise they would just break often even on minor changes to the printer 
+    // otherwise they would just break often even on minor changes to the printer
     assert!(!output.contains("Valid TODO on line 3"));
     assert!(output.contains("Expired TODO on line 5"));
     assert!(!output.contains("XX is not a valid date."));
@@ -109,7 +108,7 @@ fn test_concise_terminal_output() {
     let output = String::from_utf8_lossy(buffer.as_slice());
 
     // Assertions are intentionally not very specific -
-    // otherwise they would just break often even on minor changes to the printer 
+    // otherwise they would just break often even on minor changes to the printer
     assert!(!output.contains("Valid TODO on line 3"));
     assert!(!output.contains("Expired TODO on line 5"));
     assert!(!output.contains("XX is not a valid date."));

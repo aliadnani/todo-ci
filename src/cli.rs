@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use chrono::FixedOffset;
-use clap::{builder::TypedValueParser, Parser, ValueEnum, error::ErrorKind};
+use clap::{builder::TypedValueParser, error::ErrorKind, Parser, ValueEnum};
 use grep::{
     matcher::{Captures, Matcher},
     regex::RegexMatcher,
@@ -45,7 +45,7 @@ pub struct Args {
     pub timezone_offset: FixedOffset,
 }
 
-#[derive(ValueEnum, Debug, Clone)] 
+#[derive(ValueEnum, Debug, Clone)]
 pub enum DisplayMode {
     Concise,
     OverdueOnly,

@@ -1,3 +1,3 @@
 mod default_ignores;
-mod tdignore;
 mod patterns;
+mod tdignore;
