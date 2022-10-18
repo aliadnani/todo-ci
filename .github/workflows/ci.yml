@@ -11,9 +11,15 @@ env:
 
 jobs:
   test:
-    name: cargo test
-    runs-on: ubuntu-latest
+    name: Test `cargo check/test` on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@1.64.0
-      - run: cargo test --all-features
+      - run: |
+          cargo check
+          cargo test
