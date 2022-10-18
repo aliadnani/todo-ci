@@ -29,7 +29,7 @@ docker run -v $(pwd):/volume -it ghcr.io/aliadnani/todo-ci:latest /volume
 
 Run `todo-ci` as part of your `ci/cd` runs to check for any outstanding TODOs in code. If any are found, a `1` exit code is emitted, hence failing the run.
 
-`todo-ci` is similar to [todo-or-die](https://github.com/davidpdrsn/todo-or-die) & [todo-macro](https://github.com/rgwood/todo-macro) but without the use of Rust macros and instead run as a seperate CLI tool. This allows `todo-ci` to be language agnostic and lets you run it in any any project using a langauge that supports comments.
+`todo-ci` is similar to [todo-or-die](https://github.com/davidpdrsn/todo-or-die) & [todo-macro](https://github.com/rgwood/todo-macro) but without the use of Rust macros and instead run as a separate CLI tool. This allows `todo-ci` to be language agnostic and lets you run it in any project using a language that supports comments.
 
 ## Installation
 
@@ -46,6 +46,13 @@ Using `docker`:
 # See https://github.com/aliadnani/todo-ci/pkgs/container/todo-ci
 docker pull ghcr.io/aliadnani/todo-ci:latest
 ```
+
+## Tips
+
+1. Set the `--no-error` flag on production `ci/cd` runs to prevent non-deterministic builds if any TODOs do expire.
+2. A `.tdignore` file can be added at the directory `todo-ci` is invoked in, this disables TODO checking for specified files/directories.  
+3. Set a  `--timezone-offset` corresponding to your team's timezone (e.g. +08:00) to make the TODO expiry check more correct - otherwise it defaults to UTC
+
 
 ## Features
 
